@@ -1,0 +1,1495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quantum Edge | MT4 Expert Advisor for Trade Confirmation</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+        }
+        
+        body {
+            background-color: #0f172a;
+            color: #e2e8f0;
+            line-height: 1.6;
+            padding-top: 100px;
+        }
+        
+        /* Fixed Header */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background-color: #1e293b;
+            border-bottom: 2px solid #3b82f6;
+            z-index: 1000;
+            padding: 15px 5%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+        
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .logo {
+            height: 50px;
+            width: auto;
+        }
+        
+        .logo-text {
+            font-size: 24px;
+            font-weight: 700;
+            background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        
+        .tagline {
+            font-size: 14px;
+            color: #94a3b8;
+            margin-top: 2px;
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 25px;
+        }
+        
+        .nav-links a {
+            color: #cbd5e1;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s;
+            padding: 8px 12px;
+            border-radius: 4px;
+        }
+        
+        .nav-links a:hover {
+            color: #60a5fa;
+            background-color: rgba(59, 130, 246, 0.1);
+        }
+        
+        /* Hero Section */
+        .hero {
+            background: linear-gradient(135deg, #1e293b, #334155);
+            padding: 60px 30px 40px 30px;
+            text-align: center;
+            border-bottom: 4px solid #3b82f6;
+        }
+        
+        .hero h1 {
+            font-size: 42px;
+            margin-bottom: 15px;
+            color: #f1f5f9;
+        }
+        
+        .hero .subtitle {
+            font-size: 22px;
+            color: #94a3b8;
+            margin-bottom: 25px;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .hero-stats {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        
+        .stat-item {
+            text-align: center;
+            min-width: 150px;
+        }
+        
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #60a5fa;
+        }
+        
+        .stat-label {
+            font-size: 14px;
+            color: #94a3b8;
+            margin-top: 5px;
+        }
+        
+        /* Free Month Emphasis Box */
+        .free-month-box {
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.15), rgba(21, 128, 61, 0.15));
+            border: 2px solid #22c55e;
+            border-radius: 12px;
+            padding: 25px;
+            margin: 25px auto 30px;
+            max-width: 900px;
+            text-align: center;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
+            70% { box-shadow: 0 0 0 15px rgba(34, 197, 94, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+        }
+        
+        .free-month-title {
+            color: #22c55e;
+            font-size: 28px;
+            font-weight: 800;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+        
+        .free-month-title i {
+            font-size: 32px;
+        }
+        
+        .free-month-text {
+            color: #86efac;
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .free-month-subtext {
+            color: #bbf7d0;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+        
+        /* Smaller Disclaimer Box */
+        .disclaimer-box {
+            background: rgba(239, 68, 68, 0.08);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            border-radius: 8px;
+            padding: 15px 20px;
+            margin: 20px auto;
+            max-width: 900px;
+            text-align: left;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+        
+        .disclaimer-title {
+            color: #ef4444;
+            font-weight: bold;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+        
+        .disclaimer-content {
+            font-size: 12px;
+            color: #fca5a5;
+            line-height: 1.4;
+        }
+        
+        /* NEW: Strategy Architecture Section */
+        .strategy-architecture {
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.9), rgba(51, 65, 85, 0.9));
+            border: 2px solid #3b82f6;
+            border-radius: 12px;
+            padding: 30px;
+            margin: 30px 0;
+        }
+        
+        .strategy-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .strategy-header h3 {
+            color: #60a5fa;
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        
+        .strategy-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+        }
+        
+        .strategy-column {
+            background: rgba(15, 23, 42, 0.7);
+            border-radius: 10px;
+            padding: 25px;
+            border: 1px solid;
+        }
+        
+        .core-column {
+            border-color: #ef4444;
+        }
+        
+        .advanced-column {
+            border-color: #8b5cf6;
+        }
+        
+        .strategy-column h4 {
+            font-size: 20px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .core-column h4 {
+            color: #ef4444;
+        }
+        
+        .advanced-column h4 {
+            color: #8b5cf6;
+        }
+        
+        .strategy-item {
+            background: rgba(30, 41, 59, 0.5);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border-left: 4px solid;
+        }
+        
+        .core-item {
+            border-left-color: #ef4444;
+        }
+        
+        .advanced-item {
+            border-left-color: #8b5cf6;
+        }
+        
+        .strategy-item h5 {
+            color: #e2e8f0;
+            margin-bottom: 8px;
+            font-size: 16px;
+        }
+        
+        .strategy-item p {
+            font-size: 14px;
+            color: #94a3b8;
+            line-height: 1.4;
+        }
+        
+        .account-notice {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid #3b82f6;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 25px;
+            text-align: center;
+        }
+        
+        .account-notice h4 {
+            color: #60a5fa;
+            margin-bottom: 10px;
+        }
+        
+        /* Video Installation Section */
+        .video-install {
+            background: rgba(30, 41, 59, 0.8);
+            border-radius: 12px;
+            padding: 25px;
+            margin: 30px 0;
+            text-align: center;
+        }
+        
+        .video-install h3 {
+            color: #60a5fa;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .video-container {
+            position: relative;
+            padding-bottom: 56.25%;
+            height: 0;
+            overflow: hidden;
+            max-width: 800px;
+            margin: 0 auto 20px;
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        .video-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        
+        .video-note {
+            font-size: 13px;
+            color: #94a3b8;
+            margin-top: 15px;
+        }
+        
+        /* Screenshots Section */
+        .screenshots-section {
+            margin: 40px auto;
+            max-width: 1000px;
+            text-align: center;
+        }
+        
+        .screenshots-title {
+            font-size: 28px;
+            color: #60a5fa;
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+        
+        .screenshots-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+        
+        .screenshot-card {
+            background: rgba(30, 41, 59, 0.7);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            transition: transform 0.3s, box-shadow 0.3s;
+            border: 1px solid #334155;
+        }
+        
+        .screenshot-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(59, 130, 246, 0.2);
+        }
+        
+        .screenshot-img {
+            width: 100%;
+            height: auto;
+            display: block;
+            border-bottom: 2px solid #3b82f6;
+        }
+        
+        .screenshot-caption {
+            padding: 20px;
+            text-align: left;
+        }
+        
+        .screenshot-caption h4 {
+            color: #93c5fd;
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+        
+        .screenshot-caption p {
+            color: #cbd5e1;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        /* Main Content */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 30px;
+        }
+        
+        .content-card {
+            background: linear-gradient(145deg, #1e293b, #334155);
+            border-radius: 12px;
+            padding: 35px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            border-left: 5px solid #3b82f6;
+        }
+        
+        h2 {
+            font-size: 28px;
+            margin: 25px 0 15px;
+            color: #60a5fa;
+        }
+        
+        h3 {
+            font-size: 22px;
+            margin: 20px 0 10px;
+            color: #93c5fd;
+        }
+        
+        p {
+            margin-bottom: 15px;
+        }
+        
+        ul {
+            margin: 15px 0 15px 25px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+            padding-left: 5px;
+        }
+        
+        .definition-box {
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.9), rgba(51, 65, 85, 0.9));
+            border: 2px solid #3b82f6;
+            border-radius: 12px;
+            padding: 30px;
+            margin: 25px 0;
+            position: relative;
+        }
+        
+        .definition-title {
+            color: #60a5fa;
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .definition-title i {
+            color: #8b5cf6;
+        }
+        
+        .definition-content {
+            line-height: 1.7;
+            margin-bottom: 15px;
+        }
+        
+        .definition-highlight {
+            background: rgba(59, 130, 246, 0.15);
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #8b5cf6;
+            margin: 15px 0;
+        }
+        
+        .definition-highlight h4 {
+            color: #fbbf24;
+            margin-bottom: 10px;
+        }
+        
+        .signal-list {
+            background-color: rgba(30, 41, 59, 0.7);
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .signal-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+            padding: 10px;
+            border-radius: 6px;
+            background-color: rgba(15, 23, 42, 0.5);
+        }
+        
+        .signal-icon {
+            background-color: #3b82f6;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            font-weight: bold;
+        }
+        
+        .highlight-box {
+            background: linear-gradient(90deg, rgba(59, 130, 246, 0.2), rgba(139, 92, 246, 0.2));
+            border: 1px solid #3b82f6;
+            border-radius: 10px;
+            padding: 25px;
+            margin: 30px 0;
+            text-align: center;
+        }
+        
+        .highlight-box h3 {
+            color: #fbbf24;
+            font-size: 22px;
+            margin-bottom: 10px;
+        }
+        
+        .cta-button {
+            display: inline-block;
+            background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+            color: white;
+            padding: 15px 35px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 18px;
+            margin-top: 15px;
+            transition: transform 0.3s, box-shadow 0.3s;
+            box-shadow: 0 5px 15px rgba(59, 130, 246, 0.4);
+            border: none;
+            cursor: pointer;
+        }
+        
+        .cta-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(59, 130, 246, 0.6);
+        }
+        
+        .testimonial-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+        
+        .testimonial-card {
+            background: rgba(30, 41, 59, 0.7);
+            padding: 20px;
+            border-radius: 8px;
+            font-style: italic;
+            position: relative;
+        }
+        
+        .testimonial-disclaimer {
+            font-size: 11px;
+            color: #94a3b8;
+            margin-top: 15px;
+            font-style: normal;
+            border-top: 1px solid #334155;
+            padding-top: 10px;
+        }
+        
+        .testimonial-author {
+            text-align: right;
+            font-weight: bold;
+            color: #60a5fa;
+            margin-top: 10px;
+        }
+        
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        
+        .feature-item {
+            text-align: center;
+            padding: 20px;
+            background: rgba(15, 23, 42, 0.5);
+            border-radius: 8px;
+        }
+        
+        .feature-icon {
+            font-size: 40px;
+            color: #3b82f6;
+            margin-bottom: 15px;
+        }
+        
+        .legal-disclaimer {
+            background: rgba(30, 41, 59, 0.9);
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 30px 0;
+            font-size: 12px;
+            color: #94a3b8;
+        }
+        
+        .legal-disclaimer h4 {
+            color: #ef4444;
+            margin-bottom: 10px;
+        }
+        
+        /* Download Form Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            backdrop-filter: blur(5px);
+        }
+        
+        .modal-content {
+            background: linear-gradient(145deg, #1e293b, #0f172a);
+            border-radius: 16px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            border: 2px solid #3b82f6;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            animation: modalSlideIn 0.3s ease-out;
+        }
+        
+        @keyframes modalSlideIn {
+            from { transform: translateY(-30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        .modal-header {
+            padding: 20px 25px;
+            border-bottom: 1px solid #334155;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(30, 41, 59, 0.8);
+        }
+        
+        .modal-header h3 {
+            margin: 0;
+            color: #60a5fa;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            color: #94a3b8;
+            font-size: 28px;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.3s;
+        }
+        
+        .modal-close:hover {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+        
+        .modal-body {
+            padding: 25px;
+        }
+        
+        .form-subtitle {
+            color: #94a3b8;
+            margin-bottom: 25px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #cbd5e1;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 12px 15px;
+            background: rgba(15, 23, 42, 0.7);
+            border: 1px solid #334155;
+            border-radius: 8px;
+            color: #f1f5f9;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+        
+        .form-group input::placeholder {
+            color: #64748b;
+        }
+        
+        .form-group small {
+            display: block;
+            margin-top: 5px;
+            color: #64748b;
+            font-size: 12px;
+        }
+        
+        .form-checkbox {
+            margin: 20px 0;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+        
+        .form-checkbox input[type="checkbox"] {
+            margin-top: 4px;
+            accent-color: #3b82f6;
+        }
+        
+        .form-checkbox label {
+            color: #cbd5e1;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+        
+        .form-checkbox a {
+            color: #60a5fa;
+            text-decoration: none;
+        }
+        
+        .form-checkbox a:hover {
+            text-decoration: underline;
+        }
+        
+        .submit-button {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.3s;
+            margin-top: 20px;
+        }
+        
+        .submit-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(59, 130, 246, 0.4);
+        }
+        
+        .submit-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .form-footer {
+            text-align: center;
+            margin-top: 20px;
+            color: #94a3b8;
+            font-size: 14px;
+        }
+        
+        .form-footer a {
+            color: #60a5fa;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        
+        .form-footer a:hover {
+            text-decoration: underline;
+        }
+        
+        .form-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .secondary-button {
+            width: 100%;
+            padding: 12px;
+            background: rgba(30, 41, 59, 0.8);
+            color: #cbd5e1;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            font-size: 15px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.3s;
+        }
+        
+        .secondary-button:hover {
+            background: rgba(59, 130, 246, 0.1);
+            border-color: #3b82f6;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #94a3b8;
+            font-size: 14px;
+            border-top: 1px solid #334155;
+            margin-top: 40px;
+        }
+        
+        .footer a {
+            color: #60a5fa;
+            text-decoration: none;
+        }
+        
+        .footer a:hover {
+            text-decoration: underline;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                padding: 15px;
+                gap: 15px;
+            }
+            
+            .logo-container {
+                flex-direction: column;
+                text-align: center;
+                gap: 10px;
+            }
+            
+            .nav-links {
+                gap: 15px;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            
+            body {
+                padding-top: 150px;
+            }
+            
+            .container {
+                padding: 20px;
+            }
+        
+            .content-card {
+                padding: 25px;
+            }
+            
+            .hero h1 {
+                font-size: 32px;
+            }
+            
+            .hero .subtitle {
+                font-size: 18px;
+            }
+            
+            .free-month-box {
+                padding: 20px;
+                margin: 20px auto 25px;
+            }
+            
+            .free-month-title {
+                font-size: 24px;
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .free-month-text {
+                font-size: 18px;
+            }
+            
+            .screenshots-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .screenshot-card {
+                max-width: 100%;
+            }
+            
+            .hero-stats {
+                flex-direction: row;
+                gap: 20px;
+                justify-content: space-around;
+            }
+            
+            .stat-item {
+                min-width: 120px;
+            }
+            
+            h2 {
+                font-size: 24px;
+            }
+            
+            h3 {
+                font-size: 20px;
+            }
+            
+            .definition-box {
+                padding: 20px;
+            }
+            
+            .strategy-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .strategy-column {
+                padding: 20px;
+            }
+            
+            .modal-content {
+                width: 95%;
+                max-height: 95vh;
+            }
+            
+            .modal-header {
+                padding: 15px 20px;
+            }
+            
+            .modal-body {
+                padding: 20px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .hero-stats {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .stat-item {
+                min-width: 100%;
+            }
+            
+            .free-month-title {
+                font-size: 22px;
+            }
+            
+            .free-month-text {
+                font-size: 16px;
+            }
+            
+            .screenshots-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Fixed Header -->
+    <header class="header">
+        <div class="logo-container">
+            <img src="/logo.png" alt="Quantum Edge Logo" class="logo">
+            <div>
+                <div class="logo-text">Quantum Edge</div>
+                <div class="tagline">MT4 Expert Advisor for Trade Confirmation Analysis</div>
+            </div>
+        </div>
+        
+        <nav class="nav-links">
+            <a href="#what-is">What Is QE?</a>
+            <a href="#strategy">Strategy</a>
+            <a href="#features">Features</a>
+            <a href="#how-it-works">How It Works</a>
+            <a href="#pricing">Pricing</a>
+            <a href="#screenshots">Screenshots</a>
+            <a href="#testimonials">User Feedback</a>
+            <a href="#downloads">Downloads</a>
+        </nav>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <h1>Multi-Indicator Trade Confirmation with Quantum Edge</h1>
+        <p class="subtitle">MT4 Expert Advisor combining RSI, MACD, moving averages, volume analysis, and price action for comprehensive trade analysis with built-in risk parameters.</p>
+        
+        <div class="hero-stats">
+            <div class="stat-item">
+                <div class="stat-value">7</div>
+                <div class="stat-label">Core Strategy Signals</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">2</div>
+                <div class="stat-label">Timeframe Analysis (H1/H4)</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">5</div>
+                <div class="stat-label">Risk Management Features</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">30-Day</div>
+                <div class="stat-label">Free Trial Period</div>
+            </div>
+        </div>
+        
+        <!-- Free Month Emphasis Box -->
+        <div class="free-month-box">
+            <div class="free-month-title">
+                <i class="fas fa-gift"></i>
+                1 MONTH OBLIGATION FREE TRIAL
+                <i class="fas fa-gift"></i>
+            </div>
+            <div class="free-month-text">
+                Try Quantum Edge completely free for 30 days
+            </div>
+            <div class="free-month-subtext">
+                If it works for you, continue for only $30/month. No hidden fees, no contracts.
+            </div>
+        </div>
+        
+        <a href="#downloads" class="cta-button">Start Your Free 30-Day Trial</a>
+        
+        <!-- Smaller Disclaimer Box -->
+        <div class="disclaimer-box">
+            <div class="disclaimer-title">
+                <i class="fas fa-exclamation-triangle"></i>
+                IMPORTANT TRADING DISCLAIMER
+            </div>
+            <div class="disclaimer-content">
+                Trading foreign exchange, cryptocurrencies, and CFDs carries a high level of risk and may not be suitable for all investors. Past performance is not indicative of future results. The Quantum Edge EA is a technical analysis tool that provides trade confirmation signals based on historical data and technical indicators. It does not guarantee profits or prevent losses. You should carefully consider your investment objectives, level of experience, and risk appetite before using this tool. Always test in a demo account first and never risk more than you can afford to lose. The developers of Quantum Edge are not registered financial advisors and do not provide financial advice.
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <div class="container">
+        <!-- What Is Quantum Edge Section -->
+        <section id="what-is" class="content-card">
+            <h2>What Quantum Edge Actually Is</h2>
+            
+            <div class="definition-box">
+                <div class="definition-title">
+                    <i class="fas fa-info-circle"></i>
+                    Clear Definition of Quantum Edge
+                </div>
+                
+                <div class="definition-content">
+                    <p><strong>Quantum Edge is a technical analysis tool</strong> built as an Expert Advisor (EA) for the MetaTrader 4 (MT4) trading platform. It is <strong>NOT</strong> an automated trading robot, get-rich-quick scheme, or artificial intelligence system.</p>
+                    
+                    <div class="definition-highlight">
+                        <h4>What Quantum Edge IS:</h4>
+                        <ul>
+                            <li><strong>A Multi-Indicator Analyzer:</strong> Processes RSI, MACD, moving averages, volume, and price action data</li>
+                            <li><strong>A Trade Confirmation Tool:</strong> Helps identify when multiple indicators align on potential trade setups</li>
+                            <li><strong>A Risk Parameter Calculator:</strong> Suggests stop-loss, take-profit, and position sizing based on your settings</li>
+                            <li><strong>An Educational Resource:</strong> Helps traders learn technical analysis through real-time signal explanations</li>
+                            <li><strong>A Decision Support System:</strong> Provides additional data points for your trading decisions</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="definition-highlight">
+                        <h4>What Quantum Edge is NOT:</h4>
+                        <ul>
+                            <li><strong>Optional Automated Trading:</strong> However, it is not a guaranteed path to profits or automatic wins—trading always involves risks and potential losses. </li>
+                            <li><strong>NOT a Guarantee of Profits:</strong> Cannot predict future market movements or guarantee successful trades</li>
+                            <li><strong>NOT Financial Advice:</strong> Does not tell you what trades to take - provides analysis only</li>
+                            <li><strong>NOT a "Set and Forget" Solution:</strong> Requires monitoring, adjustment, and human oversight</li>
+                            <li><strong>Suitable for Complete Beginners:</strong> Recommended basic understanding of trading concepts and MT4 platform</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- NEW: 7-Core Strategy Section -->
+        <section id="strategy" class="content-card">
+            <h2>The 7-Core Quantum Edge Strategy Architecture</h2>
+            <p>Quantum Edge operates on a sophisticated 7-signal architecture that ensures consistent analysis while adapting to market conditions.</p>
+            
+            <div class="strategy-architecture">
+                <div class="strategy-header">
+                    <h3><i class="fas fa-project-diagram"></i> Dual-Layer Strategy System</h3>
+                    <p>4 non-negotiable core signals ensure basic strategy integrity, while 3 advanced filters adapt based on performance</p>
+                </div>
+                
+                <div class="strategy-grid">
+                    <div class="strategy-column core-column">
+                        <h4><i class="fas fa-shield-alt"></i> 4 Non-Negotiable Core Signals</h4>
+                        <p>These fundamental signals never change and form the backbone of every analysis:</p>
+                        
+                        <div class="strategy-item core-item">
+                            <h5>1. RSI Momentum Alignment</h5>
+                            <p>Confirms overbought/oversold conditions with divergence detection</p>
+                        </div>
+                        
+                        <div class="strategy-item core-item">
+                            <h5>2. MACD Crossover Verification</h5>
+                            <p>Validates momentum shifts through histogram and signal line analysis</p>
+                        </div>
+                        
+                        <div class="strategy-item core-item">
+                            <h5>3. Trend Direction Consistency</h5>
+                            <p>Ensures multiple moving averages align in the same direction</p>
+                        </div>
+                        
+                        <div class="strategy-item core-item">
+                            <h5>4. Volume Confirmation</h5>
+                            <p>Verifies price moves with corresponding volume activity</p>
+                        </div>
+                    </div>
+                    
+                    <div class="strategy-column advanced-column">
+                        <h4><i class="fas fa-brain"></i> 3 Advanced Learning Filters</h4>
+                        <p>These conditional filters adapt and improve based on trading performance:</p>
+                        
+                        <div class="strategy-item advanced-item">
+                            <h5>5. Market Session Optimization</h5>
+                            <p>Learns which sessions work best for your trading style and adjusts signal sensitivity</p>
+                        </div>
+                        
+                        <div class="strategy-item advanced-item">
+                            <h5>6. Volatility Adjustment</h5>
+                            <p>Adapts stop-loss and take-profit levels based on current market volatility</p>
+                        </div>
+                        
+                        <div class="strategy-item advanced-item">
+                            <h5>7. News Event Filtering</h5>
+                            <p>Reduces signals during high-impact news events to avoid false breakouts</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="account-notice">
+                    <h4><i class="fas fa-wallet"></i> Ideal Account Balance & Progressive Sophistication</h4>
+                    <p><strong>Recommended: $5,000 - $10,000 in your trading account</strong> for optimal position sizing.</p>
+                    <p>As Quantum Edge analyzes more trades, it gets smarter about <strong>WHEN to apply its core strategy</strong> and how to adjust the advanced filters for your specific trading conditions.</p>
+                    <p style="margin-top: 10px;"><i class="fas fa-envelope"></i> <strong>Need different position sizing?</strong> Email <a href="mailto:admin@quantumedge.us" style="color: #60a5fa; font-weight: bold;">admin@quantumedge.us</a> for custom configuration.</p>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Features Section -->
+        <section id="features" class="content-card">
+            <h2>Technical Analysis Features</h2>
+            <div class="feature-grid">
+                <div class="feature-item">
+                    <i class="fas fa-chart-line feature-icon"></i>
+                    <h3>Multi-Indicator Analysis</h3>
+                    <p>Simultaneously monitors RSI, MACD, moving averages, volume, and price action patterns.</p>
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-shield-alt feature-icon"></i>
+                    <h3>Integrated Risk Parameters</h3>
+                    <p>Includes configurable stop-loss, take-profit, and position sizing calculations.</p>
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-robot feature-icon"></i>
+                    <h3>Flexible Operation Modes</h3>
+                    <p>Choose between manual confirmation alerts or automated signal notifications.</p>
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-graduation-cap feature-icon"></i>
+                    <h3>Educational Tool</h3>
+                    <p>Helps traders learn technical analysis through real-time signal explanations.</p>
+                </div>
+            </div>
+            
+            <div class="legal-disclaimer">
+                <h4>Performance Disclaimer</h4>
+                <p>All trading involves risk. The features described are analytical tools that process market data according to predefined algorithms. Results will vary based on market conditions, user settings, and individual trading decisions. No representation is made that any account will or is likely to achieve profits or losses similar to those discussed anywhere on this site.</p>
+            </div>
+        </section>
+        
+        <!-- How It Works Section -->
+        <section id="how-it-works" class="content-card">
+            <h2>How Quantum Edge Analyzes Markets</h2>
+            <p>The Expert Advisor processes market data through multiple technical indicators to identify potential trade setups.</p>
+            
+            <h3>Signal Confirmation Process</h3>
+            <div class="signal-list">
+                <div class="signal-item">
+                    <div class="signal-icon">1</div>
+                    <div><strong>RSI Analysis:</strong> Monitors overbought/oversold conditions (>55 potential buy, <45 potential sell)</div>
+                </div>
+                <div class="signal-item">
+                    <div class="signal-icon">2</div>
+                    <div><strong>MACD Monitoring:</strong> Identifies momentum shifts through crossover patterns</div>
+                </div>
+                <div class="signal-item">
+                    <div class="signal-icon">3</div>
+                    <div><strong>Trend Alignment:</strong> Checks moving average alignment for trend direction</div>
+                </div>
+                <div class="signal-item">
+                    <div class="signal-icon">4</div>
+                    <div><strong>Volume Assessment:</strong> Analyzes trading volume for confirmation</div>
+                </div>
+                <div class="signal-item">
+                    <div class="signal-icon">5</div>
+                    <div><strong>Price Action:</strong> Examines candlestick patterns on M15 and H4 timeframes</div>
+                </div>
+            </div>
+            
+            <h3>Risk Management Parameters</h3>
+            <ul>
+                <li>Configurable stop-loss based on ATR or fixed pips</li>
+                <li>Adjustable take-profit levels</li>
+                <li>Optional trailing stop functionality</li>
+                <li>Position size calculation based on account balance percentage</li>
+                <li>Maximum daily loss limit (user-configurable)</li>
+            </ul>
+            
+            <!-- NEW: Video Installation Section -->
+            <div class="video-install">
+                <h3><i class="fas fa-video"></i> How to Install Quantum Edge in MT4</h3>
+                <p>Watch this tutorial to learn how to install the .ex4 file in your MetaTrader 4 platform:</p>
+                
+                <div class="video-container">
+                    <iframe src="https://www.youtube.com/embed/58uPqcwzMVY" title="How to Install Expert Advisor in MT4" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                </div>
+                
+                <div class="video-note">
+                    <p><i class="fas fa-info-circle"></i> <strong>Note:</strong> This video is by "Trader Nick" - we have no affiliation with the channel owner. It's included as a helpful installation guide for our users.</p>
+                    <p style="margin-top: 10px;">After downloading QuantumEdge.ex4, follow these steps to install in MT4.</p>
+                </div>
+            </div>
+            
+            <div class="legal-disclaimer">
+                <h4>Algorithm Transparency</h4>
+                <p>The Quantum Edge algorithm is based on publicly available technical analysis formulas. All indicator calculations use standard MT4 functions. The exact combination parameters and confirmation thresholds are proprietary, but the underlying mathematics are standard technical analysis. We do not use machine learning, neural networks, or predictive AI.</p>
+            </div>
+        </section>
+        
+        <!-- Screenshots Section -->
+        <section id="screenshots" class="content-card">
+            <h2>Quantum Edge in Action</h2>
+            <p class="subtitle">See how Quantum Edge displays signals and manages trades in real market conditions</p>
+            
+            <div class="screenshots-section">
+                <h3 class="screenshots-title">
+                    <i class="fas fa-camera"></i>
+                    Real Trading Screenshots
+                </h3>
+                
+                <div class="screenshots-grid">
+                    <div class="screenshot-card">
+                        <img src="QE Screenshot 2025-12-29.png" alt="Quantum Edge EA Interface on MT4" class="screenshot-img">
+                        <div class="screenshot-caption">
+                            <h4>Quantum Edge EA Interface</h4>
+                            <p>Shows the EA panel with real-time RSI, MACD, and moving average analysis. The interface displays current market conditions, signal strength, and recommended trade parameters.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="screenshot-card">
+                        <img src="QE 2025-12-29.png" alt="Quantum Edge Trade Signals and Analysis" class="screenshot-img">
+                        <div class="screenshot-caption">
+                            <h4>Trade Signal Analysis</h4>
+                            <p>Demonstrates how Quantum Edge identifies potential trade setups by combining multiple technical indicators. Shows entry points, stop-loss, and take-profit calculations.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="highlight-box">
+                    <h3>See It Working Live</h3>
+                    <p>Want to see Quantum Edge analyzing live markets? Contact us for a live demo or download the trial to test it yourself on your MT4 platform.</p>
+                    <a href="#downloads" class="cta-button">Download Trial to See Live Analysis</a>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Pricing Section -->
+        <section id="pricing" class="highlight-box">
+            <h3>Simple, Transparent Pricing</h3>
+            <p style="font-size: 24px; font-weight: 700; color: #22c55e; margin: 15px 0;">$0 for first 30 days - Full Features</p>
+            <p style="font-size: 20px; margin-bottom: 15px;">If it works for you, continue for only <strong>$30/month</strong> </p>
+            <p><i class="fas fa-check-circle" style="color: #22c55e;"></i> No obligation to continue after trial</p>
+            <p><i class="fas fa-check-circle" style="color: #22c55e;"></i> Cancel anytime</p>
+            <a href="#downloads" class="cta-button" style="margin-top: 25px;">Start Free 30-Day Trial Now</a>
+            <p style="margin-top: 15px; font-size: 14px; color: #cbd5e1;">Price covers software maintenance, updates, and support.</p>
+        </section>
+        
+        <!-- Testimonials Section -->
+        <section id="testimonials" class="content-card">
+            <h2>What Users Say About Quantum Edge</h2>
+            <p class="subtitle">Individual experiences vary - these are subjective opinions from real users</p>
+            
+            <div class="testimonial-grid">
+                <div class="testimonial-card">
+                    "The free trial let me test everything before committing. After 30 days, I knew it was worth the $30/month."
+                    <div class="testimonial-author">- Brian M., Forex Trader</div>
+                    <div class="testimonial-disclaimer">Individual results vary. This user has 2 years trading experience.</div>
+                </div>
+                <div class="testimonial-card">
+                    "Zero obligation trial was perfect. I tested in demo for the full month before going live."
+                    <div class="testimonial-author">- Mike R., Swing Trader</div>
+                    <div class="testimonial-disclaimer">User reported using demo account for 3 months before live trading.</div>
+                </div>
+                <div class="testimonial-card">
+                    "Finally a tool that lets you try properly before paying. No pressure to continue after 30 days."
+                    <div class="testimonial-author">- Alex T., Technical Analyst</div>
+                    <div class="testimonial-disclaimer">This user has a background in financial analysis.</div>
+                </div>
+            </div>
+            
+            <div class="legal-disclaimer">
+                <h4>Testimonial Disclaimer</h4>
+                <p>The experiences presented are individual testimonials and are not representative of all users. These users may have received discounted or complimentary access to Quantum Edge. Trading results vary based on individual skill, market conditions, risk management, and other factors. No guarantee of similar results is expressed or implied.</p>
+            </div>
+        </section>
+        
+        <!-- Downloads Section with Form -->
+    <!-- Downloads Section with Form -->
+<!-- Downloads Section with Form -->
+<!-- Downloads Section with Form -->
+<section id="downloads" class="content-card">
+    <h2>Get Started with Quantum Edge</h2>
+    <p>Download our free trial and educational resources. Always test in demo first.</p>
+    
+    <div class="account-notice" style="margin-bottom: 30px;">
+        <h4><i class="fas fa-info-circle"></i> Recommended Account Setup</h4>
+        <p><strong>Ideal balance: $5,000 - $10,000</strong> for optimal position sizing with 1-2% risk per trade.</p>
+        <p>If your account is outside this range or you need custom settings, email <a href="mailto:admin@quantumedge.us" style="color: #60a5fa; font-weight: bold;">admin@quantumedge.us</a></p>
+    </div>
+    
+    <div class="feature-grid" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));">
+        <div class="feature-item" style="display: flex; flex-direction: column; height: 100%;">
+            <div style="flex: 1;">
+                <i class="fas fa-download feature-icon"></i>
+                <h3>Quantum Edge Expert Advisor</h3>
+                <p>QuantumEdge.ex4 - Download</p>
+                <p style="font-size: 12px; color: #94a3b8; margin-top: 5px;">30-Day Free Trial - Full Features</p>
+            </div>
+            <button class="cta-button" onclick="showDownloadForm()" style="font-size: 16px; padding: 12px 20px; width: 100%; margin-top: 20px; white-space: nowrap;">
+                <i class="fas fa-download"></i> Free Trial Download
+            </button>
+        </div>
+        
+        <div class="feature-item" style="display: flex; flex-direction: column; height: 100%;">
+            <div style="flex: 1;">
+                <i class="fas fa-file-pdf feature-icon"></i>
+                <h3>Setup & User Guide</h3>
+                <p>28-page PDF with installation and configuration</p>
+                <p style="font-size: 12px; color: #94a3b8; margin-top: 5px;">Includes risk configuration guide</p>
+            </div>
+            <a href="/QuantumEdge_MT4_Starter_Guide.pdf" class="cta-button" style="font-size: 16px; padding: 12px 20px; width: 100%; margin-top: 20px; white-space: nowrap; display: inline-block; text-align: center;">
+                <i class="fas fa-file-pdf"></i> Download Guide
+            </a>
+        </div>
+        
+        <div class="feature-item" style="display: flex; flex-direction: column; height: 100%;">
+            <div style="flex: 1;">
+                <i class="fas fa-video feature-icon"></i>
+                <h3>Video Tutorials</h3>
+                <p>Step-by-step setup and usage videos</p>
+                <p style="font-size: 12px; color: #94a3b8; margin-top: 5px;">Free educational content</p>
+            </div>
+            <a href="https://www.youtube.com/watch?v=58uPqcwzMVY" target="_blank" class="cta-button" style="font-size: 16px; padding: 12px 20px; width: 100%; margin-top: 20px; white-space: nowrap; display: inline-block; text-align: center;">
+                <i class="fas fa-play-circle"></i> Watch Tutorials
+            </a>
+        </div>
+    </div>
+    
+    <!-- Download Form Modal (Hidden by default) -->
+    <div id="downloadModal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-download"></i> Download Quantum Edge Expert Advisor</h3>
+                <button class="modal-close" onclick="closeDownloadForm()">&times;</button>
+            </div>
+            
+            <div class="modal-body">
+                <!-- New User Form -->
+                <div id="newUserForm">
+                    <h4>New User Registration</h4>
+                    <p class="form-subtitle">Please provide your details to download the 30-day free trial</p>
+                    
+                    <form id="downloadForm" name="mt4-download" method="POST" netlify data-netlify="true">
+                        <input type="hidden" name="form-name" value="mt4-download">
+                        <input type="hidden" name="user_type" value="new">
+                        
+                        <div class="form-group">
+                            <label for="fullName"><i class="fas fa-user"></i> Full Name *</label>
+                            <input type="text" id="fullName" name="full_name" required placeholder="Enter your full name">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="postcode"><i class="fas fa-location-dot"></i> Postcode/ZIP *</label>
+                            <input type="text" id="postcode" name="postcode" required placeholder="Enter your postcode">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="email"><i class="fas fa-envelope"></i> Email Address *</label>
+                            <input type="email" id="email" name="email" required placeholder="your.email@example.com">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="mt4Account"><i class="fas fa-chart-line"></i> MT4 Account Number *</label>
+                            <input type="text" id="mt4Account" name="mt4_account" required placeholder="e.g., 12345678" pattern="[0-9]{6,9}">
+                            <small>6-9 digit MT4 account number from your broker</small>
+                        </div>
+                        
+                        <div class="form-checkbox">
+                            <input type="checkbox" id="terms" name="terms" required>
+                            <label for="terms">
+                                I agree to the <a href="/terms.html" target="_blank">Terms of Service</a> and understand that trading involves risk. I will test in demo first.
+                            </label>
+                        </div>
+                        
+                        <div class="form-checkbox">
+                            <input type="checkbox" id="newsletter" name="newsletter">
+                            <label for="newsletter">
+                                Send me occasional updates and trading tips (optional)
+                            </label>
+                        </div>
+                        
+                        <button type="submit" class="submit-button">
+                            <i class="fas fa-rocket"></i> Download QuantumEdge.ex4
+                        </button>
+                        
+                        <p class="form-footer">
+                            Already registered? <a href="javascript:void(0)" onclick="showReturningUser()">Click here</a> to download with just your MT4 account.
+                        </p>
+                    </form>
+                </div>
+                
+                <!-- Returning User Form -->
+                <div id="returningUserForm" style="display: none;">
+                    <h4>Returning User Download</h4>
+                    <p class="form-subtitle">Enter your MT4 account number to download the latest version</p>
+                    
+                    <form id="returningForm">
+                        <input type="hidden" name="user_type" value="returning">
+                        
+                        <div class="form-group">
+                            <label for="returningMt4Account"><i class="fas fa-chart-line"></i> MT4 Account Number *</label>
+                            <input type="text" id="returningMt4Account" name="mt4_account" required placeholder="Your 6-9 digit MT4 account">
+                            <small>Enter the same MT4 account number you registered with</small>
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button type="submit" class="submit-button">
+                                <i class="fas fa-download"></i> Download Latest Version
+                            </button>
+                            <button type="button" class="secondary-button" onclick="showNewUser()">
+                                <i class="fas fa-user-plus"></i> I'm a New User
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="legal-disclaimer">
+        <h4>System Requirements & Limitations</h4>
+        <p>Requires MetaTrader 4 platform (free from your broker). Works with Windows. Requires stable internet connection for real-time data. May not function correctly during high volatility or news events. Not compatible with all broker servers. Always test with your specific broker and account type before live trading.</p>
+    </div>
+</section>
