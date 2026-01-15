@@ -1462,8 +1462,9 @@
                             <p class="form-subtitle">Enter your MT4 account number to download the latest version</p>
                    
                             <form id="returningForm" name="mt4-returning" method="POST" netlify data-netlify="true">
-                                <input type="hidden" name="form-name" value="mt4-returning">
-                                <input type="hidden" name="user_type" value="returning">
+                                    <input type="hidden" name="_redirect" value="/download.html">
+                                    <input type="hidden" name="form-name" value="mt4-returning">
+                                    <input type="hidden" name="user_type" value="returning">
                        
                                 <div class="form-group">
                                     <label for="returningMt4Account"><i class="fas fa-chart-line"></i> MT4 Account Number *</label>
