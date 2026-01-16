@@ -1,93 +1,95 @@
-const fetch = require("node-fetch");
+// validate-license.js - Updated for "Table 1" table
+const Airtable = require('airtable');
 
-exports.handler = async (event) => {
+exports.handler = async function(event, context) {
+  // Only allow POST requests
+  if (event.httpMethod !== 'POST') {
+    return {
+      statusCode: 405,
+      body: JSON.stringify({ error: 'Method not allowed' })
+    };
+  }
+
   try {
-    if (event.httpMethod !== "POST") {
-      return json(405, { valid: false, reason: "method_not_allowed" });
+    // Parse the incoming data from MT4
+    const data = JSON.parse(event.body);
+    const { license_key, mt4_account } = data;
+    
+    // Get environment variables from Netlify
+    const AIRTABLE_API_KEY = process.env.AIRTABLE_API_KEY;
+    const AIRTABLE_BASE_ID = process.env.AIRTABLE_BASE_ID;
+    
+    // Use "Table 1" as your table name
+    const AIRTABLE_TABLE = process.env.AIRTABLE_TABLE || 'Table 1';
+    
+    // Initialize Airtable with your credentials
+    const base = new Airtable({ apiKey: AIRTABLE_API_KEY }).base(AIRTABLE_BASE_ID);
+    
+    // Query Airtable for the license
+    const records = await base(AIRTABLE_TABLE).select({
+      filterByFormula: `AND({LicenseKey} = '${license_key}', {MT4Account} = '${mt4_account}')`,
+      maxRecords: 1
+    }).firstPage();
+    
+    if (records.length === 0) {
+      return {
+        statusCode: 404,
+        body: JSON.stringify({ 
+          status: 'INVALID',
+          message: 'License not found' 
+        })
+      };
     }
-
-    const { mt4_account, license_key } = JSON.parse(event.body || "{}");
-
-    if (!license_key) {
-      return json(400, { valid: false, reason: "missing_license_key" });
-    }
-
-    const AIRTABLE_URL =
-      `https://api.airtable.com/v0/${process.env.AIRTABLE_BASE_ID}/${process.env.AIRTABLE_TABLE}` +
-      `?filterByFormula={License_Key}='${license_key}'`;
-
-    const response = await fetch(AIRTABLE_URL, {
-      headers: {
-        Authorization: `Bearer ${process.env.AIRTABLE_API_KEY}`,
-      },
-    });
-
-    if (!response.ok) {
-      return json(500, { valid: true, status: "TEMP_ERROR" }); // grace
-    }
-
-    const data = await response.json();
-
-    if (!data.records || data.records.length === 0) {
-      return json(200, { valid: false, status: "INVALID_KEY" });
-    }
-
-    const record = data.records[0];
+    
+    const record = records[0];
     const fields = record.fields;
-
-    const status = (fields.Status || "INVALID").toUpperCase();
-    const expiry = fields.Expiry ? new Date(fields.Expiry) : null;
-    const now = new Date();
-
-    // ❌ Hard blocks
-    if (["CANCELED", "EXPIRED", "PAST_DUE", "SUSPENDED"].includes(status)) {
-      return json(200, { valid: false, status });
+    
+    // Check if license is active and not expired
+    const today = new Date().toISOString().split('T')[0];
+    const expiryDate = fields.ExpiryDate || '';
+    
+    if (fields.Status !== 'Active') {
+      return {
+        statusCode: 200,
+        body: JSON.stringify({ 
+          status: fields.Status || 'SUSPENDED',
+          expiryDate: expiryDate,
+          tier: fields.Tier || 'Standard'
+        })
+      };
     }
-
-    if (expiry && expiry < now) {
-      return json(200, { valid: false, status: "EXPIRED" });
+    
+    if (expiryDate && expiryDate < today) {
+      return {
+        statusCode: 200,
+        body: JSON.stringify({ 
+          status: 'EXPIRED',
+          expiryDate: expiryDate,
+          tier: fields.Tier || 'Standard'
+        })
+      };
     }
-
-    // 🔐 Optional MT4 account check
-    if (fields.MT4_Account && mt4_account) {
-      if (String(fields.MT4_Account) !== String(mt4_account)) {
-        return json(200, { valid: false, status: "ACCOUNT_MISMATCH" });
-      }
-    }
-
-    // Update last check-in (fire and forget)
-    fetch(
-      `https://api.airtable.com/v0/${process.env.AIRTABLE_BASE_ID}/${process.env.AIRTABLE_TABLE}/${record.id}`,
-      {
-        method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${process.env.AIRTABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          fields: { Last_Check: new Date().toISOString() },
-        }),
-      }
-    );
-
-    return json(200, {
-      valid: true,
-      status,
-      expiry: fields.Expiry || null,
-    });
-
-  } catch (err) {
-    return json(500, {
-      valid: true,           // GRACE MODE
-      status: "SERVER_ERROR"
-    });
+    
+    // License is valid
+    return {
+      statusCode: 200,
+      body: JSON.stringify({ 
+        status: 'ACTIVE',
+        expiryDate: expiryDate,
+        tier: fields.Tier || 'Standard',
+        features: fields.Features || 'All'
+      })
+    };
+    
+  } catch (error) {
+    console.error('License validation error:', error);
+    
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ 
+        error: 'Server error',
+        details: error.message 
+      })
+    };
   }
 };
-
-function json(code, body) {
-  return {
-    statusCode: code,
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  };
-}
