@@ -1406,13 +1406,13 @@
                             <h4>New User Registration</h4>
                             <p class="form-subtitle">Please provide your details to download the 30-day free trial</p>
                    
-                            <form
-  id="downloadForm"
-  name="mt4-download"
-  method="POST"
-  action="QE.ex4"
-  data-netlify="true"
->
+                          
+<form id="downloadForm"
+      name="mt4-download"
+      method="POST"
+      action="/QE.ex4"
+      data-netlify="true"
+      onsubmit="setTimeout(() => { closeDownloadForm(); }, 500);">
 							    <input type="hidden" name="_redirect" value="/download.html">
                                 <input type="hidden" name="form-name" value="mt4-download">
                                 <input type="hidden" name="user_type" value="new">
@@ -1467,8 +1467,12 @@
                             <h4>Returning User Download</h4>
                             <p class="form-subtitle">Enter your MT4 account number to download the latest version</p>
                    
-                           <form id="returningForm"  name="mt4-returning" method="POST" action="/" data-netlify="true"
->
+                        <form id="returningForm"
+      name="mt4-returning"
+      method="POST"
+      action="/QE.ex4"
+      data-netlify="true"
+      onsubmit="setTimeout(() => { closeDownloadForm(); }, 500);">
 
                                     <input type="hidden" name="_redirect" value="/download.html">
                                     <input type="hidden" name="form-name" value="mt4-returning">
@@ -1536,4 +1540,5 @@
     </script>
 </body>
 </html>
+
 
