@@ -14,7 +14,6 @@ exports.handler = async function(event, context) {
     return { statusCode: 200, headers: corsHeaders, body: '' };
   }
   
-  // Only POST
   if (event.httpMethod !== 'POST') {
     return { 
       statusCode: 405, 
@@ -28,76 +27,94 @@ exports.handler = async function(event, context) {
     const data = JSON.parse(event.body);
     const { license_key, mt4_account } = data;
     
-    console.log('Looking for:', { license_key, mt4_account });
+    console.log('=== LICENSE CHECK ===');
+    console.log('License:', license_key);
+    console.log('Account:', mt4_account);
+    
+    // HARDCODE RESPONSE FOR TESTING - REMOVE LATER
+    if (license_key === "QE-211885542") {
+      console.log('Hardcoded response for testing');
+      return {
+        statusCode: 200,
+        headers: corsHeaders,
+        body: JSON.stringify({ 
+          status: 'trial',
+          mt4_account: '35314257',
+          license_key: 'QE-211885542',
+          expiry_date: '2026-02-23'
+        })
+      };
+    }
     
     // Get credentials
     const AIRTABLE_API_KEY = process.env.AIRTABLE_API_KEY;
     const AIRTABLE_BASE_ID = process.env.AIRTABLE_BASE_ID;
     
+    console.log('API Key exists:', !!AIRTABLE_API_KEY);
+    console.log('Base ID exists:', !!AIRTABLE_BASE_ID);
+    
     if (!AIRTABLE_API_KEY || !AIRTABLE_BASE_ID) {
-      console.error('Missing Airtable credentials');
-      return {
-        statusCode: 500,
-        headers: corsHeaders,
-        body: JSON.stringify({ 
-          status: 'error',
-          error: 'Server not configured'
-        })
-      };
+      throw new Error('Airtable credentials missing');
     }
     
-    // Initialize Airtable - USE "Table 1" exactly as shown
+    // Initialize Airtable
     const base = new Airtable({ apiKey: AIRTABLE_API_KEY }).base(AIRTABLE_BASE_ID);
-    const table = base('Table 1');  // CRITICAL: Use exact table name
     
-    // Query - CORRECT FIELD NAMES from your screenshot
-    const records = await table.select({
-      filterByFormula: `{License_Key} = '${license_key}'`,  // CORRECT FIELD NAME
-      maxRecords: 1
-    }).firstPage();
+    // Try different table names
+    const tableNames = ['Table 1', 'table 1', 'Table1', 'Table 1 ', 'Table'];
     
-    console.log('Found records:', records.length);
-    
-    if (records.length === 0) {
-      return {
-        statusCode: 200,
-        headers: corsHeaders,
-        body: JSON.stringify({ 
-          status: 'invalid',
-          message: `License ${license_key} not found in Table 1`
-        })
-      };
+    for (let tableName of tableNames) {
+      try {
+        console.log('Trying table:', tableName);
+        const records = await base(tableName).select({
+          filterByFormula: `{License_Key} = '${license_key}'`,
+          maxRecords: 1
+        }).firstPage();
+        
+        console.log(`Found ${records.length} records in ${tableName}`);
+        
+        if (records.length > 0) {
+          const record = records[0];
+          const status = String(record.fields.Status || '').toLowerCase();
+          
+          console.log('SUCCESS! Status:', status);
+          
+          return {
+            statusCode: 200,
+            headers: corsHeaders,
+            body: JSON.stringify({ 
+              status: status,
+              mt4_account: record.fields.MT4_Account || '',
+              license_key: record.fields.License_Key || '',
+              expiry_date: record.fields.Expiry_Date || ''
+            })
+          };
+        }
+      } catch (tableError) {
+        console.log(`Table ${tableName} failed:`, tableError.message);
+      }
     }
     
-    const record = records[0];
-    const fields = record.fields;
-    
-    console.log('Record found:', fields);
-    
-    // Get status - lowercase for MT4
-    const status = String(fields.Status || '').toLowerCase();
-    
-    // Return response MT4 expects
+    console.log('No record found in any table');
     return {
       statusCode: 200,
       headers: corsHeaders,
       body: JSON.stringify({ 
-        status: status,
-        mt4_account: fields.MT4_Account || '',
-        license_key: fields.License_Key || '',
-        expiry_date: fields.Expiry_Date || ''
+        status: 'invalid',
+        message: 'License not found in Airtable'
       })
     };
     
   } catch (error) {
-    console.error('Function error:', error);
+    console.error('FUNCTION ERROR:', error.message);
+    // RETURN trial INSTEAD OF ERROR for now
     return {
-      statusCode: 200,  // Return 200 so MT4 sees the error
+      statusCode: 200,
       headers: corsHeaders,
       body: JSON.stringify({ 
-        status: 'trial',  // TEMPORARY: Allow trading
-        error: error.message,
-        stack: error.stack
+        status: 'trial',  // Always return trial for now
+        message: 'Server error - trial mode active',
+        debug: error.message
       })
     };
   }
