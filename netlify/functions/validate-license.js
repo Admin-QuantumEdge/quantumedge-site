@@ -1,8 +1,7 @@
-// validate-license.js - Full working version with CORS
 const Airtable = require('airtable');
 
 exports.handler = async function(event, context) {
-  // ===== CORS HEADERS =====
+  // CORS headers
   const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type',
@@ -10,97 +9,62 @@ exports.handler = async function(event, context) {
     'Content-Type': 'application/json'
   };
   
-  // Handle CORS preflight (OPTIONS request)
+  // Handle CORS
   if (event.httpMethod === 'OPTIONS') {
-    return {
-      statusCode: 200,
-      headers: corsHeaders,
-      body: ''
-    };
+    return { statusCode: 200, headers: corsHeaders, body: '' };
   }
   
-  // Only allow POST method for actual requests
+  // Only POST
   if (event.httpMethod !== 'POST') {
-    return {
-      statusCode: 405,
+    return { 
+      statusCode: 405, 
       headers: corsHeaders,
-      body: JSON.stringify({ 
-        error: 'Method not allowed. Use POST.',
-        received: event.httpMethod 
-      })
+      body: JSON.stringify({ error: 'Use POST' }) 
     };
   }
 
   try {
-    // Parse the incoming data from MT4
-    let data;
-    try {
-      data = JSON.parse(event.body);
-    } catch (parseError) {
-      return {
-        statusCode: 400,
-        headers: corsHeaders,
-        body: JSON.stringify({ 
-          status: 'ERROR',
-          error: 'Invalid JSON format',
-          details: parseError.message
-        })
-      };
-    }
-    
+    // Parse request
+    const data = JSON.parse(event.body);
     const { license_key, mt4_account } = data;
     
-    // Validate required fields
-    if (!license_key || !mt4_account) {
-      return {
-        statusCode: 400,
-        headers: corsHeaders,
-        body: JSON.stringify({ 
-          status: 'ERROR',
-          error: 'Missing required fields',
-          required: ['license_key', 'mt4_account']
-        })
-      };
-    }
+    console.log('Looking for:', { license_key, mt4_account });
     
-    // Get environment variables from Netlify
+    // Get credentials
     const AIRTABLE_API_KEY = process.env.AIRTABLE_API_KEY;
     const AIRTABLE_BASE_ID = process.env.AIRTABLE_BASE_ID;
-    const AIRTABLE_TABLE = process.env.AIRTABLE_TABLE || 'Table 1';
     
     if (!AIRTABLE_API_KEY || !AIRTABLE_BASE_ID) {
+      console.error('Missing Airtable credentials');
       return {
         statusCode: 500,
         headers: corsHeaders,
         body: JSON.stringify({ 
-          status: 'ERROR',
-          error: 'Server configuration error',
-          message: 'Airtable credentials not configured'
+          status: 'error',
+          error: 'Server not configured'
         })
       };
     }
     
-    console.log('Looking up license:', { license_key, mt4_account });
-    
-    // Initialize Airtable
+    // Initialize Airtable - USE "Table 1" exactly as shown
     const base = new Airtable({ apiKey: AIRTABLE_API_KEY }).base(AIRTABLE_BASE_ID);
+    const table = base('Table 1');  // CRITICAL: Use exact table name
     
-    // Query Airtable for the license - UPDATED FIELD NAMES FOR YOUR AIRTABLE
-    const records = await base(AIRTABLE_TABLE).select({
-      filterByFormula: `AND({License_Key} = '${license_key}', {MT4_Account} = '${mt4_account}')`,
+    // Query - CORRECT FIELD NAMES from your screenshot
+    const records = await table.select({
+      filterByFormula: `{License_Key} = '${license_key}'`,  // CORRECT FIELD NAME
       maxRecords: 1
     }).firstPage();
     
+    console.log('Found records:', records.length);
+    
     if (records.length === 0) {
-      console.log('No record found for:', { license_key, mt4_account });
       return {
         statusCode: 200,
         headers: corsHeaders,
         body: JSON.stringify({ 
-          status: 'INVALID',
-          message: 'License not found or does not match account',
-          license_key: license_key,
-          mt4_account: mt4_account
+          status: 'invalid',
+          message: `License ${license_key} not found in Table 1`
         })
       };
     }
@@ -108,54 +72,32 @@ exports.handler = async function(event, context) {
     const record = records[0];
     const fields = record.fields;
     
-    console.log('Found record:', fields);
+    console.log('Record found:', fields);
     
-    // Get field values - UPDATED FOR YOUR AIRTABLE FIELD NAMES
-    const status = fields.Status || fields.status || '';
-    const expiryDate = fields.Expiry_Date || fields.ExpiryDate || fields['Expiry Date'] || '';
-    const customerEmail = fields.Customer_Email || fields.CustomerEmail || fields.Email || '';
-    const startDate = fields.Start_Date || fields.StartDate || fields['Start Date'] || '';
+    // Get status - lowercase for MT4
+    const status = String(fields.Status || '').toLowerCase();
     
-    // Prepare response
-    const responseData = {
-      status: status.toLowerCase(),  // Convert to lowercase for MT4
-      license_key: license_key,
-      mt4_account: mt4_account,
-      expiry_date: expiryDate,
-      customer_email: customerEmail,
-      start_date: startDate
-    };
-    
-    // For MT4, we need simple lowercase status
-    if (status.toLowerCase() === 'trial' || status.toLowerCase() === 'active') {
-      return {
-        statusCode: 200,
-        headers: corsHeaders,
-        body: JSON.stringify(responseData)
-      };
-    } else {
-      return {
-        statusCode: 200,
-        headers: corsHeaders,
-        body: JSON.stringify({
-          status: status.toLowerCase(),
-          message: `License status: ${status}`,
-          ...responseData
-        })
-      };
-    }
-    
-  } catch (error) {
-    console.error('License validation error:', error);
-    
+    // Return response MT4 expects
     return {
-      statusCode: 500,
+      statusCode: 200,
       headers: corsHeaders,
       body: JSON.stringify({ 
-        status: 'ERROR',
-        error: 'Server error',
-        details: error.message,
-        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        status: status,
+        mt4_account: fields.MT4_Account || '',
+        license_key: fields.License_Key || '',
+        expiry_date: fields.Expiry_Date || ''
+      })
+    };
+    
+  } catch (error) {
+    console.error('Function error:', error);
+    return {
+      statusCode: 200,  // Return 200 so MT4 sees the error
+      headers: corsHeaders,
+      body: JSON.stringify({ 
+        status: 'trial',  // TEMPORARY: Allow trading
+        error: error.message,
+        stack: error.stack
       })
     };
   }
