@@ -4,7 +4,7 @@ exports.handler = async function (event) {
   const headers = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Content-Type': 'application/json'
   };
 
@@ -12,6 +12,52 @@ exports.handler = async function (event) {
     return { statusCode: 200, headers, body: '' };
   }
 
+  // Allow GET for debugging
+  if (event.httpMethod === 'GET') {
+    try {
+      const base = new Airtable({
+        apiKey: process.env.AIRTABLE_API_KEY
+      }).base('appbjZY4Uwu811X3G');
+
+      const records = await base('tblVeGLkOvK14GAgY').select({
+        maxRecords: 5
+      }).firstPage();
+
+      const allFields = [];
+      
+      if (records.length > 0) {
+        records.forEach((record, index) => {
+          const fields = record.fields;
+          allFields.push({
+            record: index + 1,
+            fields: Object.keys(fields),
+            values: fields
+          });
+        });
+      }
+
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({
+          status: 'debug',
+          total_records: records.length,
+          all_fields: allFields
+        }, null, 2)
+      };
+    } catch (err) {
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({
+          status: 'error',
+          message: err.message
+        })
+      };
+    }
+  }
+
+  // POST request (normal validation)
   if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405,
@@ -27,111 +73,58 @@ exports.handler = async function (event) {
       apiKey: process.env.AIRTABLE_API_KEY
     }).base('appbjZY4Uwu811X3G');
 
-    // IMPORTANT: Check the EXACT column name for License_Key
-    // Is it "License_Key" or "A License_Key"? 
-    // Try both:
-    const records = await base('tblVeGLkOvK14GAgY').select({
-      maxRecords: 1,
-      // Try with "License_Key" first
-      filterByFormula: `AND({License_Key}='${License_Key}',{# MT4_Account}=${MT4_Account})`
-    }).firstPage();
-
-    if (!records.length) {
-      // If not found, try with "A License_Key"
-      const records2 = await base('tblVeGLkOvK14GAgY').select({
-        maxRecords: 1,
-        filterByFormula: `AND({A License_Key}='${License_Key}',{# MT4_Account}=${MT4_Account})`
-      }).firstPage();
+    // Get ALL records to debug
+    const allRecords = await base('tblVeGLkOvK14GAgY').select().all();
+    
+    console.log('Total records in table:', allRecords.length);
+    
+    // Manual search
+    let foundRecord = null;
+    for (const record of allRecords) {
+      const fields = record.fields;
+      console.log('Record fields:', Object.keys(fields));
+      console.log('Values:', {
+        License_Key: fields['License_Key'],
+        MT4_Account: fields['# MT4_Account'],
+        Status: fields['Status']
+      });
       
-      if (!records2.length) {
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({
-            status: 'invalid',
-            message: 'License not found'
-          })
-        };
+      if (fields['License_Key'] === License_Key && 
+          String(fields['# MT4_Account']) === String(MT4_Account)) {
+        foundRecord = record;
+        break;
       }
-      
-      var record = records2[0];
-    } else {
-      var record = records[0];
     }
 
-    const fields = record.fields;
-    
-    console.log('ALL FIELDS FOUND:', Object.keys(fields));
-    
-    // Get values - use EXACT column names from your image
-    const licenseKey = fields['License_Key'] || fields['A License_Key'];
-    const mt4Account = fields['# MT4_Account'];
-    const statusValue = fields['Status'];  // Should be "trial"
-    const expiryDate = fields['Expiry_Date'];
-    const customerEmail = fields['Customer_Email'];
-    const startDate = fields['Start_Date'];
-
-    console.log('Extracted values:', {
-      licenseKey,
-      mt4Account,
-      statusValue,
-      expiryDate,
-      customerEmail,
-      startDate
-    });
-
-    // Check status
-    const status = String(statusValue || '').trim().toLowerCase();
-    
-    if (!status || (status !== 'active' && status !== 'trial')) {
+    if (!foundRecord) {
       return {
         statusCode: 200,
         headers,
         body: JSON.stringify({
           status: 'invalid',
-          message: `Invalid status: "${statusValue}" (available fields: ${Object.keys(fields).join(', ')})`
+          message: 'License not found'
         })
       };
     }
 
-    // Check expiry
-    let isExpired = false;
-    let expiryFormatted = '';
+    const fields = foundRecord.fields;
     
-    if (expiryDate) {
-      try {
-        const expiryDateObj = new Date(expiryDate);
-        expiryFormatted = expiryDateObj.toISOString().split('T')[0];
-        isExpired = expiryDateObj < new Date();
-      } catch (e) {
-        console.error('Date parse error:', e);
-      }
-    }
-
-    if (isExpired) {
-      return {
-        statusCode: 200,
-        headers,
-        body: JSON.stringify({
-          status: 'invalid',
-          message: `License expired on ${expiryFormatted}`
-        })
-      };
-    }
-
+    // Return ALL fields for debugging
     return {
       statusCode: 200,
       headers,
       body: JSON.stringify({
-        status: 'valid',
-        license_key: licenseKey,
-        mt4_account: mt4Account,
-        customer_email: customerEmail,
-        start_date: startDate,
-        expiry_date: expiryFormatted,
-        status_type: status,
-        message: 'License is valid'
-      })
+        status: 'debug_record',
+        found: true,
+        all_field_names: Object.keys(fields),
+        all_fields: fields,
+        license_key: fields['License_Key'],
+        mt4_account: fields['# MT4_Account'],
+        status_value: fields['Status'],
+        expiry_date: fields['Expiry_Date'],
+        customer_email: fields['Customer_Email'],
+        start_date: fields['Start_Date']
+      }, null, 2)
     };
 
   } catch (err) {
