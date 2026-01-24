@@ -38,7 +38,6 @@ exports.handler = async function (event) {
       apiKey: process.env.AIRTABLE_API_KEY
     }).base('appbjZY4Uwu811X3G');
 
-    // FIXED: Use MT4_Account (without #)
     const records = await base('tblVeGLkOvK14GAgY').select({
       maxRecords: 1,
       filterByFormula: `AND({License_Key}='${License_Key}',{MT4_Account}=${MT4_Account})`
@@ -58,7 +57,6 @@ exports.handler = async function (event) {
     const record = records[0];
     const fields = record.fields;
     
-    // Get values
     const licenseKey = fields['License_Key'];
     const mt4Account = fields['MT4_Account'];
     const statusValue = fields['Status'];
@@ -66,9 +64,6 @@ exports.handler = async function (event) {
     const customerEmail = fields['Customer_Email'];
     const startDate = fields['Start_Date'];
 
-    console.log('Found record:', { licenseKey, mt4Account, statusValue, expiryDate });
-
-    // Check status
     const status = String(statusValue || '').trim().toLowerCase();
     
     if (!status || (status !== 'active' && status !== 'trial')) {
@@ -82,7 +77,6 @@ exports.handler = async function (event) {
       };
     }
 
-    // Check expiration
     let isExpired = false;
     let expiryFormatted = '';
     
