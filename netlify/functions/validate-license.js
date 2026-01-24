@@ -27,10 +27,10 @@ exports.handler = async function (event) {
       apiKey: process.env.AIRTABLE_API_KEY
     }).base('appbjZY4Uwu811X3G');
 
-    // Use field NAMES (easier to debug)
+    // FIXED: Use the field ID for # MT4_Account instead of name
     const records = await base('tblVeGLkOvK14GAgY').select({
       maxRecords: 1,
-      filterByFormula: `AND({License_Key}='${License_Key}',{# MT4_Account}=${MT4_Account})`
+      filterByFormula: `AND({License_Key}='${License_Key}',{fldXbaWzi1giEIL27}=${MT4_Account})`
     }).firstPage();
 
     if (!records.length) {
@@ -39,7 +39,7 @@ exports.handler = async function (event) {
         headers,
         body: JSON.stringify({
           status: 'invalid',
-          message: 'License not found'
+          message: 'License not found in Airtable'
         })
       };
     }
@@ -47,15 +47,20 @@ exports.handler = async function (event) {
     const record = records[0];
     const fields = record.fields;
 
-    // Get values - try different field name variations
-    const licenseKey = fields['License_Key'] || fields['license_key'] || fields['LICENSE_KEY'];
-    const mt4Account = fields['# MT4_Account'] || fields['MT4_Account'] || fields['mt4_account'];
-    const statusValue = fields['Status'] || fields['status'] || fields['STATUS'];
-    const expiryDate = fields['Expiry_Date'] || fields['expiry_date'] || fields['EXPIRY_DATE'];
+    // Get values using field IDs (most reliable)
+    const licenseKey = fields['fld95TyJ1nwwMtr8I'];     // License_Key field ID
+    const mt4Account = fields['fldXbaWzi1giEIL27'];     // # MT4_Account field ID
+    const statusValue = fields['fldDlkZBeUt5fda0o'];    // Status field ID
+    const expiryDate = fields['fld47RXvkHfthrsZy'];     // Expiry_Date field ID
+    const customerEmail = fields['fldhfp377CRe3rxjX'];  // Customer_Email field ID
+    const startDate = fields['fldSYNU0COpvCs2IE'];      // Start_Date field ID
 
-    // Debug response
-    console.log('Fields received:', Object.keys(fields));
-    console.log('Status value:', statusValue);
+    console.log('DEBUG - Field values:');
+    console.log('License Key:', licenseKey);
+    console.log('MT4 Account:', mt4Account);
+    console.log('Status:', statusValue);
+    console.log('Expiry Date:', expiryDate);
+    console.log('All fields:', Object.keys(fields));
 
     // Check status
     const status = String(statusValue || '').trim().toLowerCase();
@@ -66,19 +71,19 @@ exports.handler = async function (event) {
         headers,
         body: JSON.stringify({
           status: 'invalid',
-          message: `Invalid status: "${statusValue}" (available fields: ${Object.keys(fields).join(', ')})`
+          message: `Invalid status: "${statusValue}"`
         })
       };
     }
 
     // Check expiry
     let isExpired = false;
-    let expiry = '';
+    let expiryFormatted = '';
     
     if (expiryDate) {
       try {
         const expiryDateObj = new Date(expiryDate);
-        expiry = expiryDateObj.toISOString().split('T')[0];
+        expiryFormatted = expiryDateObj.toISOString().split('T')[0];
         isExpired = expiryDateObj < new Date();
       } catch (e) {
         console.error('Date parse error:', e);
@@ -91,7 +96,7 @@ exports.handler = async function (event) {
         headers,
         body: JSON.stringify({
           status: 'invalid',
-          message: `License expired on ${expiry}`
+          message: `License expired on ${expiryFormatted}`
         })
       };
     }
@@ -103,8 +108,10 @@ exports.handler = async function (event) {
         status: 'valid',
         license_key: licenseKey,
         mt4_account: mt4Account,
+        customer_email: customerEmail,
+        start_date: startDate,
+        expiry_date: expiryFormatted,
         status_type: status,
-        expiry_date: expiry,
         message: 'License is valid'
       })
     };
