@@ -22,9 +22,9 @@ exports.handler = async function (event) {
   }
 
   try {
-    const { license_key, mt4_account } = JSON.parse(event.body);
+    const { License_Key, MT4_Account } = JSON.parse(event.body);
 
-    if (!license_key || !mt4_account) {
+    if (!License_Key || !MT4_Account) {
       return {
         statusCode: 200,
         headers,
@@ -40,12 +40,12 @@ exports.handler = async function (event) {
       apiKey: process.env.AIRTABLE_API_KEY
     }).base('appbjZY4Uwu811X3G');
 
-    // Query using Table ID and Field IDs
+    // Query using Table ID and Field IDs - FIXED variable name
     const records = await base('tblVeGLkOvK14GAgY').select({
       maxRecords: 1,
       filterByFormula: `AND(
-        {fld95TyJ1nwwMtr8I}='${license_key}',
-        {fldXbaWzi1giEIL27}=${mt4_account}
+        {fld95TyJ1nwwMtr8I}='${License_Key}',
+        {fldXbaWzi1giEIL27}=${MT4_Account}
       )`
     }).firstPage();
 
@@ -64,11 +64,11 @@ exports.handler = async function (event) {
 
     // Extract ALL field values using Field IDs
     const licenseKeyValue = r['fld95TyJ1nwwMtr8I'];      // License_Key field
-    const mt4AccountValue = r['fldXbaWzi1giEIL27'];      // # MT4_Account field
+    const mt4AccountValue = r['fldXbaWzi1giEIL27'];      // MT4_Account field
     const customerEmailValue = r['fldhfp377CRe3rxjX'];   // Customer_Email field
     const statusValue = r['fldDlkZBeUt5fda0o'];          // Status field
     const startDateValue = r['fldSYNU0COpvCs2IE'];       // Start_Date field
-    const expiryDateValue = r['fld47RXvkHfthrsZy'];      // Expiry_Date field - FROM YOUR URL!
+    const expiryDateValue = r['fld47RXvkHfthrsZy'];      // Expiry_Date field
 
     // Check if license is expired
     const now = new Date();
@@ -116,8 +116,8 @@ exports.handler = async function (event) {
       headers,
       body: JSON.stringify({
         status: 'valid',
-        license_key: licenseKeyValue,
-        mt4_account: mt4AccountValue,
+        License_Key: licenseKeyValue,
+        MT4_Account: mt4AccountValue,
         customer_email: customerEmailValue,
         start_date: startDateValue,
         expiry_date: expiry,
