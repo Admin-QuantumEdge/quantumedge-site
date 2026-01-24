@@ -27,40 +27,58 @@ exports.handler = async function (event) {
       apiKey: process.env.AIRTABLE_API_KEY
     }).base('appbjZY4Uwu811X3G');
 
-    // FIXED: Use the field ID for # MT4_Account instead of name
+    // IMPORTANT: Check the EXACT column name for License_Key
+    // Is it "License_Key" or "A License_Key"? 
+    // Try both:
     const records = await base('tblVeGLkOvK14GAgY').select({
       maxRecords: 1,
-      filterByFormula: `AND({License_Key}='${License_Key}',{fldXbaWzi1giEIL27}=${MT4_Account})`
+      // Try with "License_Key" first
+      filterByFormula: `AND({License_Key}='${License_Key}',{# MT4_Account}=${MT4_Account})`
     }).firstPage();
 
     if (!records.length) {
-      return {
-        statusCode: 200,
-        headers,
-        body: JSON.stringify({
-          status: 'invalid',
-          message: 'License not found in Airtable'
-        })
-      };
+      // If not found, try with "A License_Key"
+      const records2 = await base('tblVeGLkOvK14GAgY').select({
+        maxRecords: 1,
+        filterByFormula: `AND({A License_Key}='${License_Key}',{# MT4_Account}=${MT4_Account})`
+      }).firstPage();
+      
+      if (!records2.length) {
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({
+            status: 'invalid',
+            message: 'License not found'
+          })
+        };
+      }
+      
+      var record = records2[0];
+    } else {
+      var record = records[0];
     }
 
-    const record = records[0];
     const fields = record.fields;
+    
+    console.log('ALL FIELDS FOUND:', Object.keys(fields));
+    
+    // Get values - use EXACT column names from your image
+    const licenseKey = fields['License_Key'] || fields['A License_Key'];
+    const mt4Account = fields['# MT4_Account'];
+    const statusValue = fields['Status'];  // Should be "trial"
+    const expiryDate = fields['Expiry_Date'];
+    const customerEmail = fields['Customer_Email'];
+    const startDate = fields['Start_Date'];
 
-    // Get values using field IDs (most reliable)
-    const licenseKey = fields['fld95TyJ1nwwMtr8I'];     // License_Key field ID
-    const mt4Account = fields['fldXbaWzi1giEIL27'];     // # MT4_Account field ID
-    const statusValue = fields['fldDlkZBeUt5fda0o'];    // Status field ID
-    const expiryDate = fields['fld47RXvkHfthrsZy'];     // Expiry_Date field ID
-    const customerEmail = fields['fldhfp377CRe3rxjX'];  // Customer_Email field ID
-    const startDate = fields['fldSYNU0COpvCs2IE'];      // Start_Date field ID
-
-    console.log('DEBUG - Field values:');
-    console.log('License Key:', licenseKey);
-    console.log('MT4 Account:', mt4Account);
-    console.log('Status:', statusValue);
-    console.log('Expiry Date:', expiryDate);
-    console.log('All fields:', Object.keys(fields));
+    console.log('Extracted values:', {
+      licenseKey,
+      mt4Account,
+      statusValue,
+      expiryDate,
+      customerEmail,
+      startDate
+    });
 
     // Check status
     const status = String(statusValue || '').trim().toLowerCase();
@@ -71,7 +89,7 @@ exports.handler = async function (event) {
         headers,
         body: JSON.stringify({
           status: 'invalid',
-          message: `Invalid status: "${statusValue}"`
+          message: `Invalid status: "${statusValue}" (available fields: ${Object.keys(fields).join(', ')})`
         })
       };
     }
